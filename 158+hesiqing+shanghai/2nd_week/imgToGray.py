@@ -15,6 +15,6 @@ def img_gray(img,debug=0):
     return img_grey
 
 if __name__=="__main__":
-    img=img_read(img_path=r"D:\badou_hmwk\158+hesiqing+shanghai\2nd_week\LenaRGB.bmp")
+    img=img_read(img_path=r"D:\badou_hmwk\158+hesiqing+shanghai\2nd_week\\LenaRGB.bmp")
     img_gray(img)
 

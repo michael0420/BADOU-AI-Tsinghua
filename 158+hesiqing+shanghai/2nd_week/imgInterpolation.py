@@ -52,4 +52,4 @@ def img_interpolation(img_path,dst_shape,insert_type="bilinear",debug=1):
 
 if __name__=="__main__":
     img_interpolation(img_path=r"D:\badou_hmwk\158+hesiqing+shanghai\2nd_week\LenaRGB.bmp",
-    dst_shape=(600,700,3),insert_type="bilinear",debug=1)
+    dst_shape=(600,700,3),insert_type="bilinear",debug=0)

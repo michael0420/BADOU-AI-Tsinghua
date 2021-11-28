@@ -13,4 +13,4 @@ def img_binary(imgpath,threshold,debug=0):
     return img_thres
 
 if __name__=="__main__":
-    img_binary(imgpath=r"D:\badou_hmwk\158+hesiqing+shanghai\2nd_week\LenaRGB.bmp",threshold=150)
+    img_binary(imgpath=r"D:\badou_hmwk\158+hesiqing+shanghai\2nd_week\LenaRGB.bmp",threshold=120)
