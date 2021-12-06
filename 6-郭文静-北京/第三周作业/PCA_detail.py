@@ -5,7 +5,7 @@ PCA对鸢尾花数据进行降维
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import load_iris
-
+import sklearn.decomposition as dp
 
 
 def pca_detail(X,K):
@@ -21,6 +21,7 @@ def pca_detail(X,K):
     index=np.argsort(-1*eigen)
     UT=[eigen_vector[:,index[i]] for i in range(K)]
     U=np.transpose(UT)
+    print(U)
     #5. 求降维矩阵Z=X*U
     Z=np.dot(X,U)
     return Z
@@ -30,6 +31,32 @@ def pca_detail(X,K):
 # print(x.shape)
 # print(y.shape)
 K = 2
+reduced_x=pca_detail(x,K)
+
+pca=dp.PCA(n_components=2)
+pca.fit(x)
+print(pca.components_)
+print(pca.explained_variance_)
+print(pca.singular_values_)
+#reduced_x=pca.fit(x)
+red_x,red_y=[],[]
+blue_x,blue_y=[],[]
+green_x,green_y=[],[]
+for i in range(len(reduced_x)): #按鸢尾花的类别将降维后的数据点保存在不同的表中
+    if y[i]==0:
+        red_x.append(reduced_x[i][0])
+        red_y.append(reduced_x[i][1])
+    elif y[i]==1:
+        blue_x.append(reduced_x[i][0])
+        blue_y.append(reduced_x[i][1])
+    else:
+        green_x.append(reduced_x[i][0])
+        green_y.append(reduced_x[i][1])
+plt.scatter(red_x,red_y,c='r',marker='x')
+plt.scatter(blue_x,blue_y,c='b',marker='D')
+plt.scatter(green_x,green_y,c='g',marker='.')
+plt.show()
+
 x1=pca_detail(x[0:50,:],K)
 x2=pca_detail(x[50:100,:],K)
 x3=pca_detail(x[100:150,:],K)
