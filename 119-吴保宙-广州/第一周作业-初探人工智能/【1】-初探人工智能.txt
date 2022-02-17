@@ -1,0 +1,8 @@
+119-吴保宙-作业git提交-操作_wubaozhou_20211201
+
+日常提交操作命令
+git pull
+git add .
+git commit -m "119-吴保宙-提交作业目录_2021-1201"
+git push
+
