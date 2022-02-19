@@ -1,1 +1,0 @@
-用GPU下的pytorch实现了minst识别
