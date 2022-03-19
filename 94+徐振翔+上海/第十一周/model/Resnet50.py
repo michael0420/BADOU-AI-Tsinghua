@@ -1,9 +1,4 @@
-from tensorflow.keras import models
 from tensorflow.keras import layers
-from tensorflow.keras.preprocessing import image
-import numpy as np
-from tensorflow.keras.applications.imagenet_utils import decode_predictions
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from tensorflow.python.keras import layers, Input, Model
 from tensorflow.python.keras.layers import Conv2D, AveragePooling2D, Dropout, BatchNormalization, Flatten, \
     Activation, Dense
