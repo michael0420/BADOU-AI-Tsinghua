@@ -1,0 +1,42 @@
+    Mask R-CNN是在Faster R-CNN的基础上添加了一个预测分割mask的分支，将RoI Pooling 层替换成了RoIAlign层；添加了并列的FCN层（mask层）。
+    Mask-RCNN是一个实例分割（Instance segmentation）框架，通过增加不同的分支可以完成目标分类，目标检测，语义分割，实例分割，人体姿态估计等多种任务。对于实例分割来讲，就是在Faster-RCNN的基础上(分类+回归分支)增加了一个分支用于语义分割
+
+过程：
+    （1）输入预处理后的原始图片。
+    （2）将输入图片送入到特征提取网络得到特征图。
+    （3）然后对特征图的每一个像素位置设定固定个数的ROI（也可以叫Anchor），然后将ROI区域送入RPN网络进行二分类(前景和背景)以及坐标回归，以获得精炼后的ROI区域。
+    （4）对上个步骤中获得的ROI区域执行论文提出的ROIAlign操作，即先将原图和feature map的pixel对应起来，然后将feature map和固定的feature对应起来。
+    （5）最后对这些ROI区域进行多类别分类，候选框回归和引入FCN生成Mask，完成分割任务。
+
+（一）原fastrcnn的问题
+    输入图片的大小为[800*800]，其中狗这个目标框的大小为[665*665]，经过VGG16网络之后获得的特征图尺寸为[800/32*800/32]=25*25，其中32代表VGG16中的5次下采样（步长为2）操作。同样，对于狗这个目标，我们将其对应到特征图上得到的结果是[665/32*665/32=20.78*20.78=20*20]，因为坐标要保留整数所以这里引入了第一个量化误差即舍弃了目标框在特征图上对应长宽的浮点数部分。
+
+    然后我们需要将这个[20*20]的ROI区域映射为[7*7]的ROI特征图，根据ROI Pooling的计算方式，其结果就是[20/7*20/7=2.86*2.86]，同样执行取整操作操作后ROI特征区域的尺寸为[2*2]，这里引入了第二次量化误差。
+
+    从上面的分析可以看出，这两次量化误差会导致原始图像中的像素和特征图中的像素进行对应时出现偏差，例如上面将[2.86]量化为[2]的时候就引入了[0.86*32]的偏差，这个偏差映射回原图就是[0.86*32=27.52]，可以看到这个像素偏差是很大的。
+
+（二） ROIAlign
+    为了缓解ROI Pooling量化误差过大的缺点，本论文提出了ROIAlign，ROIAligin没有使用量化操作，而是使用了双线性插值。它充分的利用原图中的虚拟像素值如27.52四周的四个真实存在的像素值来共同决定目标图中的一个像素值，即可以将和27.52类似的非整数坐标值像素对应的输出像素值估计出来。
+    其中feat.map就是VGG16或者其他Backbone网络获得的特征图，黑色实线表示的是ROI划分方式，最后输出的特征图大小为[2*2]，然后就使用双线性插值的方式来估计这些蓝色点的像素值，最后得到输出，然后再在橘红色的区域中执行Pooling操作最后得到[2*2]的输出特征图。可以看到，这个过程相比于ROI Pooling没有引入任何量化操作，即原图中的像素和特征图中的像素是完全对齐的，没有偏差，这不仅会提高检测的精度，同时也会有利于实例分割。
+
+（三） 网络结构
+    为了证明次网络的通用性，论文构造了多种不同结构的Mask R-CNN，具体为使用不同的Backbone网络以及是否将用于边框识别和Mask预测的上层网络分别应用于每个ROI。对于Backbone网络，Mask R-CNN基本使用了之前提出的架构，同时添加了一个全卷积的Mask(掩膜)预测分支。Figure3展示了两种典型的Mask R-CNN网络结构，左边的是采用[公式]或者[公式]做网络的backbone提取特征，右边的网络采用FPN网络做Backbone提取特征，最终作者发现使用ResNet-FPN作为特征提取的backbone具有更高的精度和更快的运行速度，所以实际工作时大多采用右图的完全并行的mask/分类回归。
+
+（四）损失函数
+    损失函数：分类误差+检测误差+分割误差，即L=Lcls+Lbox+Lmask
+   Lcls、Lbox：利用全连接预测出每个RoI的所属类别及其矩形框坐标值，可以参看FasterRCNN网络中的介绍。
+
+   Lmask：
+
+ ① mask分支采用FCN对每个RoI的分割输出维数为K*m*m（其中：m表示RoI Align特征图的大小），即K个类别的m*m的二值mask;保持m*m的空间布局，pixel-to-pixel操作需要保证RoI特征 映射到原图的对齐性，这也是使用RoIAlign解决对齐问题原因，减少像素级别对齐的误差。
+
+        K*m*m二值mask结构解释：最终的FCN输出一个K层的mask，每一层为一类，Log输出，用0.5作为阈值进行二值化，产生背景和前景的分割Mask
+
+这样，Lmask 使得网络能够输出每一类的 mask，且不会有不同类别 mask 间的竞争. 分类网络分支预测 object 类别标签，以选择输出 mask，对每一个ROI，如果检测得到ROI属于哪一个分 类，就只使用哪一个分支的相对熵误差作为误差值进行计算。（举例说明：分类有3类（猫，狗，人），检测得到当前ROI属于“人”这一类，那么所使用的Lmask为“人”这一分支的mask，即，每个class类别对应一个mask可以有效避免类间竞争（其他class不贡献Loss）
+
+
+ ② 对每一个像素应用sigmoid，然后取RoI上所有像素的交叉熵的平均值作为Lmask。
+
+	https://www.cnblogs.com/wangyong/p/9305347.html
+	https://blog.csdn.net/qq_37392244/article/details/88844681
+	https://blog.csdn.net/wangdongwei0/article/details/83110305?spm=1001.2101.3001.6650.2&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-2.pc_relevant_paycolumn_v3&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-2.pc_relevant_paycolumn_v3&utm_relevant_index=5

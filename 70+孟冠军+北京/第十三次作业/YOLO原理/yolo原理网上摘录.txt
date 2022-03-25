@@ -1,0 +1,57 @@
+yolo
+
+YOLOv1是典型的目标检测one stage方法，在YOLO算法中，核心思想 就是把物体检测（object detection）问题处理成回归问题，用一个卷积神经网络结构就可以从输入图像直接预测bounding box和类别概率
+	https://zhuanlan.zhihu.com/p/32525231
+	https://blog.csdn.net/mrjkzhangma/article/details/100128257
+	https://blog.csdn.net/qq_28123095/article/details/80052308
+	https://www.cnblogs.com/winslam/p/13755934.html
+
+
+yolov2
+    backbone使用了BN;引入了anchor的概念并聚类获取预设anchor;回归bbox方式做了变化,摒弃了全连接预测bbox的方法
+    YOLO v2主要改进是提高召回率和定位能力。
+	https://blog.csdn.net/zhw864680355/article/details/88207024
+	https://www.cnblogs.com/winslam/p/13792684.html
+	https://www.cnblogs.com/winslam/p/14495247.html
+
+yolov3
+    backbone引入了resnet的思想;同样使用了anchor并引入了FPN结构;loss在bbox分类时用BCE_loss
+	https://blog.csdn.net/taifengzikai/article/details/86500753
+	https://zhuanlan.zhihu.com/p/58856405
+	https://www.jianshu.com/p/f2c5afe26750
+	https://www.cnblogs.com/winslam/p/14495247.html
+
+(一)基本思想V1：
+
+    将输入图像分成S*S个格子，每隔格子负责预测中心在此格子中的物体。
+    每个格子预测B个bounding box及其置信度(confidence score)，以及C个类别概率。
+    bbox信息(x,y,w,h)为物体的中心位置相对格子位置的偏移及宽度和高度，均被归一化.
+    置信度反映是否包含物体，以及包含物体情况下位置的准确性。定义为Pr(Object)×IoU，其中Pr(Object)∈{0,1}
+ 
+
+（二）改进的V2：
+
+　　YOLO v2主要改进是提高召回率和定位能力。
+    Batch Normalization： v1中也大量用了Batch Normalization，同时在定位层后边用了dropout，v2中取消了dropout，在卷积层全部使用Batch Normalization。
+高分辨率分类器：v1中使用224 × 224训练分类器网络，扩大到448用于检测网络。v2将ImageNet以448×448 的分辨率微调最初的分类网络，迭代10 epochs。
+Anchor Boxes：v1中直接在卷积层之后使用全连接层预测bbox的坐标。v2借鉴Faster R-CNN的思想预测bbox的偏移，移除了全连接层，并且删掉了一个pooling层使特征的分辨率更大。调整了网络的输入(448->416)，以使得位置坐标为奇数，这样就只有一个中心点。加上Anchor Boxes能预测超过1000个。检测结果从69.5mAP,81% recall变为69.2 mAP,88% recall.
+    YOLO v2对Faster R-CNN的首选先验框方法做了改进，采样k-means在训练集bbox上进行聚类产生合适的先验框。由于使用欧氏距离会使较大的bbox比小的bbox产生更大的误差，而IoU与bbox尺寸无关，因此使用IOU参与距离计算，使得通过这些anchor boxes获得好的IOU分值。
+    细粒度特征(fine grain features)：借鉴了Faster R-CNN 和 SSD使用的不同尺寸feature map，以适应不同尺度大小的目标。YOLOv2使用了一种不同的方法，简单添加一个pass through layer，把浅层特征图连接到深层特征图。通过叠加浅层特征图相邻特征到不同通道（而非空间位置），类似于Resnet中的identity mapping。这个方法把26x26x512的特征图叠加成13x13x2048的特征图，与原生的深层特征图相连接，使模型有了细粒度特征。此方法使得模型的性能获得了1%的提升。
+    Multi-Scale Training: 和YOLOv1训练时网络输入的图像尺寸固定不变不同，YOLOv2（在cfg文件中random=1时）每隔几次迭代后就会微调网络的输入尺寸。训练时每迭代10次，就会随机选择新的输入图像尺寸。因为YOLOv2的网络使用的downsamples倍率为32，所以使用32的倍数调整输入图像尺寸{320,352，…，608}。训练使用的最小的图像尺寸为320 x 320，最大的图像尺寸为608 x 608。 这使得网络可以适应多种不同尺度的输入。
+V2对V1的基础网络也做了修改。
+ 
+
+（三）改进的YOLO V3：
+
+    多尺度预测 ，类似FPN（feature pyramid networks）
+    更好的基础分类网络（类ResNet）和分类器
+  (1)分类器：
+    YOLOv3不使用Softmax对每个框进行分类，而使用多个logistic分类器，因为Softmax不适用于多标签分类，用独立的多个logistic分类器准确率也不会下降。
+分类损失采用binary cross-entropy loss.
+  (2)多尺度预测
+    每种尺度预测3个box, anchor的设计方式仍然使用聚类，得到9个聚类中心,将其按照大小均分给3中尺度。
+    尺度1: 在基础网络之后添加一些卷积层再输出box信息。
+    尺度2: 从尺度1中的倒数第二层的卷积层上采样(x2)再与最后一个16x16大小的特征图相加,再次通过多个卷积后输出box信息.相比尺度1变大两倍。
+    尺度3: 与尺度2类似,使用了32x32大小的特征图.
+	
+

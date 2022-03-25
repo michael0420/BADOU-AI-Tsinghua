@@ -1,0 +1,17 @@
+    MTCNN在进行人脸检测任务时，输入是一张图像，输出图像中人脸所在位置的Bounding Box。MTCNN基于卷积神经网络，通常只适用于检测一定尺寸范围内的人脸，比如其中的P-Net，用于判断12×12大小范围内是否含有人脸，但是输入图像中人脸的尺寸未知，需要构建图像金字塔获得不同尺寸的图像，缩放图像是为了将图像中的人脸缩放到网络能检测的适宜尺寸，只要某个人脸被放缩到12×12左右，就可以被检测出来.
+    MTCNN第一阶段的目标是生成人脸候选框。首先对图片做“金字塔”变换。究其原因，是由于各种原因，使得图片中的人脸的尺度有大有小，识别算法需要适应这种目标尺度的变化；目标检测本质上来说上目标区域内特征与模板权重的点乘操作；那么如果模板尺度与目标尺度匹配，自然会有很高的检测效果。MTCNN使用了图像金字塔来解决目标多尺度问题，即把原图按照一定的比例，多次等比缩放得到多尺度的图片，很像个金字塔。
+
+作者：SJcun
+链接：https://juejin.cn/post/6844904067634823181
+来源：稀土掘金
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+    
+图像金字塔
+
+    对图片进行Resize操作，将原始图像缩放成不同的尺度，生成图像金字塔。然后将不同尺度的图像送入到这三个子网络中进行训练，目的是为了可以检测到不同大小的人脸，从而实现多尺度目标检测。
+
+
+https://blog.csdn.net/krais_wk/article/details/101444330	
+https://www.cnblogs.com/ssyfj/p/9273643.html
+https://blog.csdn.net/ABin_203/article/details/106504957?spm=1001.2101.3001.6650.3&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-3.pc_relevant_default&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-3.pc_relevant_default&utm_relevant_index=6
+https://blog.csdn.net/krais_wk/article/details/101444330?spm=1001.2101.3001.6650.1&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_aa&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_aa&utm_relevant_index=2
