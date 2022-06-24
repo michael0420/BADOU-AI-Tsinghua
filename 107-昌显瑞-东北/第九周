@@ -1,0 +1,106 @@
+# 关于第九周tf.py的问题
+
+老师，您好。我想在这里向您问几个问题。
+
+就是关于第九周作业tf.py，您给的代码我看懂了。我之后又稍加改动重新做了一遍，结果确实也是可以进行预测。
+
+先说说我对老师写的tf.py代码的理解：
+1. 读取数据，x的shape变为(200,1)，制作y
+2. 定义placeholder为了后续训练输入训练数据
+3. 定义网络中间层，定义W(1, 10);b(1, 10)参数，计算公式是xW+b，激活
+4. 定义网络输出层，定义W(10, 1);b(1, 1)参数，计算公式是xW+b，激活
+5. 定义损失函数和反向传播算法
+6. 启动会话，开始训练
+7. 预测，绘制预测曲线
+
+我的代码在老师基础上修改了1，3，4步骤，也就是说利用的公式为Wx+b而非xW+b
+1. 读取数据，x的shape变为(1,200) ，制作y
+2. 定义placeholder为了后续训练输入训练数据
+3. 定义网络中间层，定义W(10, 1);b(10, 1)参数，计算公式是Wx+b，激活
+4. 定义网络输出层，定义W(1, 10);b(1, 1)参数，计算公式是Wx+b，激活
+5. 定义损失函数和反向传播算法
+6. 启动会话，开始训练
+7. 预测，绘制预测曲线
+
+主要的不同点在于我用到的公式是 Wx+b，而老师用的是 xW+b。由于使用公式的不同，导致了 x 的 shape 不同，但是总体的参数数量是一致的。
+
+我之所以使用Wx+b，是因为前几天研究了老师讲的从零构建神经网络里面的参数设置，为此我特意写了一篇blog（[blog链接](https://blog.csdn.net/weixin_44417441/article/details/123634353)），希望老师看一下指正我对这一块的误区。
+
+Q1:所以我想问一下什么时候使用Wx+b，什么时候使用xW+b，还是都可以呢还是分别什么情况？
+
+Q2:我觉得两种公式的区别就在于Wx与xW的关系，我觉得是转置的关系，请问是否影响训练？
+
+Q3:我比较了**从零构建神经网络**的代码和老师讲的本个demo的代码，发现了训练数据都是变成多行一列的形式：从零构建神经网络的代码中输入训练数据shape为(28*28,1)，公式使用Wx+b。老师讲的本个demo代码输入训练数据shape为(200,1)，公式使用xW+b。**共同点在于输入都为多行一列**，但使用公式不同。我不清楚这是为什么，是有意为之？，希望老师能帮解答一下。
+
+Q4:接Q3，是训练数据行多列少更好？使用的公式无所谓？
+
+Q5:x的shape，行多列少是不是比行少列多训练的快啊？？好像隐约记得老师说过，不知道有没有还是我记错了。如果是的话，为什么？
+
+最后，谢谢老师的解答。
+
+##### 我的代码
+
+```py
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+import time
+
+time_start=time.time()
+
+
+# 定义数据: 使用numpy生成200个随机点
+x_data = np.linspace(-0.5, 0.5, 200)[np.newaxis, :]
+noise = np.random.normal(0, 0.02, x_data.shape)
+y_data = np.square(x_data) + noise
+
+x = tf.placeholder(tf.float32)
+y = tf.placeholder(tf.float32)
+
+# 定义神经网络中间层
+# 权值是随时都可以改变的, 所以定义为 Variable
+Weights_L1 = tf.Variable(tf.random_normal([10, 1]))
+Bias_L1 = tf.Variable(tf.zeros([10, 1]))  # 加入偏置项
+#  x'shape=(200x1),W'shape=(1*10) Bias_L1'shape=(1,10)
+wx_add_b = tf.matmul(Weights_L1, x) + Bias_L1
+Out_L1 = tf.nn.tanh(wx_add_b)  # 加入激活函数
+# W: 10*1 ; 输入: 1*n ; b: 10*1 ; 输出: 10*n
+
+# 定义神经网络输出层
+Weights_L2 = tf.Variable(tf.random_normal([1, 10]))
+Bias_L2 = tf.Variable(tf.zeros([1, 1]))  # 加入偏置项
+wx_add_b = tf.matmul(Weights_L2, Out_L1) + Bias_L2
+predicetion = tf.nn.tanh(wx_add_b)  # 加入激活函数
+# W: 1*10 ; 输入: 10*n ; b: 1*1 ; 输出: 1*n
+
+# 定义损失函数（均方差函数）
+loss = tf.reduce_mean(tf.square(y-predicetion))  # 均方误差
+# 定义反向传播算法（使用梯度下降算法训练）  调用了自动微分工具
+train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+
+# tensorboard
+with tf.Session() as sess:
+    # 初始化 初始化不是必须的，为什么不是必须的呢？
+    sess.run(tf.global_variables_initializer())
+    # 训练
+    for _ in range(2000):
+        a = sess.run([train_step, Weights_L1, Weights_L2], feed_dict={x:x_data, y:y_data})
+    print(a)
+    predicetion_v = sess.run(predicetion, feed_dict={x:x_data})
+
+    time_end = time.time()
+    print('time cost', time_end - time_start, 's')
+    print(x_data.shape, y_data.shape, predicetion_v.shape)
+
+    x_data = x_data.flatten()
+    y_data = y_data.flatten()
+    predicetion_v =predicetion_v.flatten()
+    print(x_data.shape, y_data.shape, predicetion_v.shape)
+
+    plt.figure()
+    plt.scatter(x_data,y_data)  # 散点是真实值
+    plt.plot(x_data,predicetion_v)  # 曲线是预测值
+    plt.show()
+
+```
