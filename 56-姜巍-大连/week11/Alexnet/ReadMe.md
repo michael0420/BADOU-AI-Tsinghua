@@ -11,7 +11,7 @@
   <li>datasets_process.py  --  重写datasets类</li>
   <li>train_and_save_net.py  --  实现训练过程代码</li>
   <li>test_net.py  --  测试模型代码，输出正确率</li>
-  <li>Modified_Alex_net.pth  --  保存的训练好的权重</li>
+  <li>Modified_Alex_net.pth  --  保存的训练好的权重(github限制大文件上传，因此分两个压缩包上传，请下载解压)</li>
   <li>loss plot.py  --  画loss图代码</li>
   <li>loss plot.png  --  作图结果展示</li>
   <li>predict_single_img.py  --  单张图片预测代码</li>
