@@ -1,0 +1,2 @@
+由于数据集、建立dataset、训练、测试等过程与Alexnet作业相同故省略实现过程, 仅上传的代码部分。
+特别地，上传自己根据原论文编写的VGG网络代码MyallconvVGG16_net.py
